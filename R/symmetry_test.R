@@ -18,7 +18,7 @@
 #' @author Giovany Babativa <jgbabativam@@unal.edu.co>
 #' @param x vector of numeric information.
 #' @param statis Test statistic to be used. By default \code{statis = c("Bk", "Jk")}.
-#'   Available options are \code{"Bk"}, \code{"Ck"}, \code{"Bkc"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}, \code{"Gk"}.
+#'   Available options are \code{"Bk"}, \code{"Ck"}, \code{"Bkc"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}.
 #' @param Bk Integer or vector of integers with the cut-off parameter(s) for the \eqn{B_k} statistic.
 #'   By default \code{Bk = 5}. Multiple values can be supplied, e.g. \code{Bk = c(5, 6, 7)}.
 #' @param Jk Integer or vector of integers with the cut-off parameter(s) for the \eqn{J_k} statistic.
@@ -32,37 +32,24 @@
 #'   the conditional runs distribution. By default \code{Bkc = 11}.
 #' @param Mp Numeric vector with percentile trimming values (in percent) for the \eqn{M_p} statistic.
 #'   By default \code{Mp = c(10, 20, 25)}.
-#' @param Gk Integer or vector of integers with the cut-off parameter(s) for the \eqn{G_k} statistic.
-#'   \eqn{G_k} is the Shannon entropy (in bits) of the run-length distribution in the tail segment
-#'   comprising the \eqn{k} observations of largest absolute value. Small values indicate that the
-#'   tail run-length distribution is concentrated (few distinct lengths), which is evidence of
-#'   asymmetry. The null distribution is calibrated by permutation of signs.
-#'   By default \code{Gk = 6}. Multiple values can be supplied, e.g. \code{Gk = c(5, 6, 7)}.
-#' @param Gk_B Number of Monte Carlo permutations used to calibrate the null distribution of
-#'   \eqn{G_k}. By default \code{Gk_B = 9999}.
 #' @param median The centre parameter around which to test symmetry. By default \code{median = 0}.
 #' @param type Type of test. When the test is with known median, select \code{type = "k"};
 #'   use \code{type = "u"} for unknown median (estimated from the data).
 #' @references
 #' Corzo, J., & Babativa, G. (2013). A modified runs test for symmetry. Journal of Statistical Computation and Simulation, 83(5), 984-991.
-#' Corzo, J., & Babativa, G. (2025). An entropy-based runs test for the hypothesis of symmetry. Manuscript in preparation.
-#' Shannon, C.E. (1948). A mathematical theory of communication. Bell System Technical Journal, 27, 379-423.
 #' @examples
 #' x <- rnorm(20)
 #' #--- All tests
 #' (test <- symmetry_test(x))
 #' #--- Choose any test
 #' (Jk_test <- symmetry_test(x, statis = "Jk", Jk = 6))
-#' #--- Entropy-based test
-#' (Gk_test <- symmetry_test(x, statis = "Gk", Gk = 6))
 #' #--- Choose several tests with multiple cut-offs
 #' (MyTest1 <- symmetry_test(x, statis = c("Bk", "Jk"), Bk = c(5, 7), Jk = c(6, 8)))
-#' (MyTest2 <- symmetry_test(x, statis = c("Mp", "Jk", "Gk"), Jk = 6, Mp = c(10, 20, 25), Gk = c(5, 6)))
+#' (MyTest2 <- symmetry_test(x, statis = c("Mp", "Jk"), Jk = 6, Mp = c(10, 20, 25)))
 
 
-symmetry_test <- function(x, statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc", "Ck", "Gk"), type = "k",
-                          Bk = 5, Ck = 10, Jk = 6, Gk = 6, Gk_B = 9999,
-                          Mp = c(10, 20, 25), median = 0) {
+symmetry_test <- function(x, statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc", "Ck"), type = "k",
+                          Bk = 5, Ck = 10, Jk = 6, Mp = c(10, 20, 25), median = 0) {
   
   if (type == "u") median <- median(x)
   
@@ -183,67 +170,8 @@ symmetry_test <- function(x, statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc", "Ck"
     }
   }
   
-  # --- Gk: Entropy of run-length distribution in the tail segment ---
-  #
-  # Corzo & Babativa (2025). An entropy-based runs test for symmetry.
-  #
-  # For a tail segment of the last k positions (largest |X|), we extract
-  # the run lengths L_1, ..., L_r, form the empirical distribution
-  # p_hat_ell = #{j : L_j = ell} / r, and compute the Shannon entropy
-  #   G_k = - sum_ell  p_hat_ell * log2(p_hat_ell).
-  #
-  # Under H0 (symmetry), the sign sequence is i.i.d. Bernoulli(1/2), so
-  # the tail run-length distribution is diverse (high entropy).
-  # Under asymmetry, the tail aggregates symbols of one type (few, long
-  # runs), concentrating the run-length distribution and reducing G_k.
-  # Rejection region: small values of G_k.
-  #
-  # Null distribution: calibrated by permuting the signs of |X_{(j)}|
-  # (Gk_B replications).  The p-value is P(G_k^* <= G_k^obs | H_0).
-
-  if ("Gk" %in% statis) {
-
-    # Helper: Shannon entropy (bits) of run-length distribution
-    .entropy_runs <- function(s) {
-      if (length(s) == 0L) return(NA_real_)
-      rle_obj <- rle(s)                       # run-length encoding
-      lengths <- rle_obj$lengths
-      r       <- length(lengths)
-      if (r == 0L) return(0)
-      tbl     <- tabulate(lengths, nbins = max(lengths))
-      p_hat   <- tbl[tbl > 0] / r             # empirical run-length probs
-      -sum(p_hat * log2(p_hat))               # Shannon entropy in bits
-    }
-
-    # Tail segment: last k positions (highest |X| values)
-    for (k in Gk) {
-
-      tail_idx  <- df$indj > (n - k)          # positions n-k+1 ... n
-      tail_sign <- df$si[tail_idx]            # signs in the tail
-
-      g_obs <- .entropy_runs(tail_sign)
-
-      # Permutation null: randomly reassign signs to |X_{(j)}|
-      abs_vals <- xabs[ord]                   # sorted absolute values
-      null_g <- replicate(Gk_B, {
-        perm_signs <- sample(c(0L, 1L), n, replace = TRUE)
-        .entropy_runs(perm_signs[tail_idx])
-      })
-
-      # p-value: P(G_k^* <= G_k^obs) -- rejection for small G_k
-      pval_gk <- mean(null_g <= g_obs, na.rm = TRUE)
-
-      stats[[paste0("Gk", k)]] <- make_row(
-        stat       = paste0("Gk", k),
-        stat.value = g_obs,
-        p.value    = pval_gk
-      )
-    }
-  }
-
   dplyr::bind_rows(stats)
 }
-
 
 
 

@@ -6,13 +6,11 @@
 \usage{
 symmetry_test(
   x,
-  statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc", "Ck", "Gk"),
+  statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc", "Ck"),
   type = "k",
   Bk = 5,
   Ck = 10,
   Jk = 6,
-  Gk = 6,
-  Gk_B = 9999,
   Mp = c(10, 20, 25),
   median = 0
 )
@@ -21,7 +19,7 @@ symmetry_test(
 \item{x}{vector of numeric information.}
 
 \item{statis}{Test statistic to be used. By default \code{statis = c("Bk", "Jk")}.
-Available options are \code{"Bk"}, \code{"Ck"}, \code{"Bkc"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}, \code{"Gk"}.}
+Available options are \code{"Bk"}, \code{"Ck"}, \code{"Bkc"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}.}
 
 \item{type}{Type of test. When the test is with known median, select \code{type = "k"};
 use \code{type = "u"} for unknown median (estimated from the data).}
@@ -37,16 +35,6 @@ size control. By default \code{Ck = 10}.}
 
 \item{Jk}{Integer or vector of integers with the cut-off parameter(s) for the \eqn{J_k} statistic.
 By default \code{Jk = 6}. Multiple values can be supplied, e.g. \code{Jk = c(4, 6, 8)}.}
-
-\item{Gk}{Integer or vector of integers with the cut-off parameter(s) for the \eqn{G_k} statistic.
-\eqn{G_k} is the Shannon entropy (in bits) of the run-length distribution in the tail segment
-comprising the \eqn{k} observations of largest absolute value. Small values indicate that the
-tail run-length distribution is concentrated (few distinct lengths), which is evidence of
-asymmetry. The null distribution is calibrated by permutation of signs.
-By default \code{Gk = 6}. Multiple values can be supplied, e.g. \code{Gk = c(5, 6, 7)}.}
-
-\item{Gk_B}{Number of Monte Carlo permutations used to calibrate the null distribution of
-\eqn{G_k}. By default \code{Gk_B = 9999}.}
 
 \item{Mp}{Numeric vector with percentile trimming values (in percent) for the \eqn{M_p} statistic.
 By default \code{Mp = c(10, 20, 25)}.}
@@ -76,16 +64,12 @@ x <- rnorm(20)
 (test <- symmetry_test(x))
 #--- Choose any test
 (Jk_test <- symmetry_test(x, statis = "Jk", Jk = 6))
-#--- Entropy-based test
-(Gk_test <- symmetry_test(x, statis = "Gk", Gk = 6))
 #--- Choose several tests with multiple cut-offs
 (MyTest1 <- symmetry_test(x, statis = c("Bk", "Jk"), Bk = c(5, 7), Jk = c(6, 8)))
-(MyTest2 <- symmetry_test(x, statis = c("Mp", "Jk", "Gk"), Jk = 6, Mp = c(10, 20, 25), Gk = c(5, 6)))
+(MyTest2 <- symmetry_test(x, statis = c("Mp", "Jk"), Jk = 6, Mp = c(10, 20, 25)))
 }
 \references{
 Corzo, J., & Babativa, G. (2013). A modified runs test for symmetry. Journal of Statistical Computation and Simulation, 83(5), 984-991.
-Corzo, J., & Babativa, G. (2025). An entropy-based runs test for the hypothesis of symmetry. Manuscript in preparation.
-Shannon, C.E. (1948). A mathematical theory of communication. Bell System Technical Journal, 27, 379-423.
 }
 \author{
 Giovany Babativa <jgbabativam@unal.edu.co>

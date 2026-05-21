@@ -21,18 +21,13 @@
 #' @author Giovany Babativa <jgbabativam@@unal.edu.co>
 #' @param data data frame or tribble with the case name and the four lambda parameters of the GLD.
 #' @param statis Test statistic to be used. By default \code{statis = c("Bk", "Jk")}.
-#'   Available options are \code{"Bk"}, \code{"Bkc"}, \code{"Ck"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}, \code{"Gk"}.
+#'   Available options are \code{"Bk"}, \code{"Bkc"}, \code{"Ck"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}.
 #' @param Bk Integer or vector of integers with the cut-off parameter(s) for the \eqn{B_k} statistic.
 #'   By default \code{Bk = 5}. Multiple values can be supplied, e.g. \code{Bk = c(5, 6, 7)}.
 #' @param Ck Integer (or vector) with the cut-off(s) for the \eqn{C_k} statistic (conditional Bk).
 #'   Requires \eqn{k \geq 10} for reliable size control. By default \code{Ck = 10}.
 #' @param Jk Integer or vector of integers with the cut-off parameter(s) for the \eqn{J_k} statistic.
 #'   By default \code{Jk = 6}. Multiple values can be supplied, e.g. \code{Jk = c(4, 6, 8)}.
-#' @param Gk Integer or vector of integers with the cut-off parameter(s) for the \eqn{G_k} statistic
-#'   (entropy of the tail run-length distribution). By default \code{Gk = 6}.
-#' @param Gk_B Number of sign permutations used to calibrate the null distribution of \eqn{G_k}.
-#'   By default \code{Gk_B = 999}. Use a smaller value (e.g. 499) to reduce computation time
-#'   in large Monte Carlo studies; increase to 9999 for publication-quality p-values.
 #' @param type Type of test. When the test is with known median, select \code{type = "k"};
 #'   use \code{type = "u"} for unknown median (estimated from the data).
 #' @param alpha Significance level of the test. By default \eqn{\alpha = 0.05}.
@@ -71,8 +66,7 @@
 #' }
 
 power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
-                                Bk = 5, Ck = 10, Jk = 6, Gk = 6, Gk_B = 999,
-                                type = "k",
+                                Bk = 5, Ck = 10, Jk = 6, type = "k",
                                 alpha = 0.05, nsize, rep, plot = TRUE,
                                 median = 0,
                                 ncores = NULL) {
@@ -153,8 +147,7 @@ power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
   on.exit(parallel::stopCluster(cl), add = TRUE)
 
   parallel::clusterExport(cl,
-                          varlist = c("symmetry_test", "statis", "Bk", "Ck", "Jk",
-                                      "Gk", "Gk_B", "type",
+                          varlist = c("symmetry_test", "statis", "Bk", "Jk", "type",
                                       "alpha", "ni", "B", "crit", "compute_reject",
                                       "median_vec"),
                           envir = environment())
@@ -171,8 +164,7 @@ power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
     med <- median_vec[[i]]   # mediana específica de esta distribución
 
     result <- apply(x, 2, function(y) {
-      symmetry_test(y, statis = statis, Bk = Bk, Ck = Ck, Jk = Jk,
-                    Gk = Gk, Gk_B = Gk_B, type = type, median = med)
+      symmetry_test(y, statis = statis, Bk = Bk, Ck = Ck, Jk = Jk, type = type, median = med)
     })
 
     dplyr::bind_rows(result) %>%
